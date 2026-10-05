@@ -127,3 +127,14 @@ def test_session_detail_with_messages(client):
     assert roles == ["user", "assistant"]
     assert body["messages"][1]["citations"]  # citations_json 已解析成列表
     assert client.get("/api/sessions/nope").status_code == 404
+
+
+# ---- 健康探针（部署链探活用，kids 仓同款契约）----
+
+
+def test_health_endpoint(client):
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["mode"] == "mock"

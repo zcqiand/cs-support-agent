@@ -33,4 +33,9 @@ def create_app(
     app.state.store = store if store is not None else Store(settings.db_path)
     seed_articles(app.state.store)  # 演示种子幂等 upsert：KB 永有数据可演示
     app.include_router(router)
+
+    @app.get("/api/health")
+    def health() -> dict:
+        return {"ok": True, "mode": settings.llm_mode}
+
     return app

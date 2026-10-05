@@ -79,6 +79,8 @@ def test_kb_branch_rejects_uncited_answer_and_hands_off():
         intents("kb"),
         assistant_msg(None, [ToolCall(id="c2", name="answer_with_citations",
                                       arguments={"answer": "上门取件完全免费 [1]。"})]),
+        assistant_msg(None, [ToolCall(id="c3", name="answer_with_citations",
+                                      arguments={"answer": "上门取件完全免费，一分钱不花 [1]。"})]),
     ])
     sess = store.create_session()
     events = list(agent.reply(sess["id"], "怎么退货？"))
@@ -89,6 +91,25 @@ def test_kb_branch_rejects_uncited_answer_and_hands_off():
     assert store.get_session(sess["id"])["status"] == "handed_off"
     msgs = store.get_messages(sess["id"])
     assert "转接人工" in msgs[-1]["content"]  # 固定兜底文案，编造答案未落库
+
+
+def test_kb_verify_feedback_retry_then_success():
+    """自我校验反馈环（C038）：一次校验失败先喂回原因重答，二次通过才发给用户。"""
+    agent, store = make_agent([
+        intents("kb"),
+        assistant_msg(None, [ToolCall(id="c2", name="answer_with_citations",
+                                      arguments={"answer": "上门取件完全免费 [1]。"})]),
+        assistant_msg(None, [ToolCall(id="c3", name="answer_with_citations",
+                                      arguments={"answer": GOOD_ANSWER})]),
+    ])
+    sess = store.create_session()
+    events = list(agent.reply(sess["id"], "怎么退货？"))
+    done = last(events)
+    assert done["status"] == "live" and done["citations"]
+    assert "citations" in by_types(events)
+    # 第三轮 LLM 调用的 messages 里带校验失败反馈（tool 消息）
+    retry_messages = agent.llm.calls[2]["messages"]
+    assert any(m["role"] == "tool" and "未通过引用校验" in m["content"] for m in retry_messages)
 
 
 def test_kb_branch_no_result_says_so_without_llm():

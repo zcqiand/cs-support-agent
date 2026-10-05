@@ -113,6 +113,7 @@ class SupportAgent:
             yield _done(no_result=True)
             return
         messages = [{"role": "system", "content": prompts.kb_system(hits)}, *self._history(session_id)]
+        verify_attempts = 0  # 自我校验反馈环（C038）：失败先喂回原因重答，二次仍败才转人工
         for _ in range(_MAX_TOOL_ROUNDS):
             final = None
             for ev in self.llm.chat_stream(messages=messages, tools=ANSWER_TOOLS):
@@ -138,10 +139,27 @@ class SupportAgent:
                     yield {"type": "delta", "text": content}
                     yield {"type": "citations", "citations": hits}
                     yield _done(citations=hits)
-                else:
-                    yield from self._system_handoff(
-                        session_id, prompts.FALLBACK_VERIFY_FAILED, f"答案校验未通过（{verdict.reason}）"
+                    return
+                verify_attempts += 1
+                # 反馈重答仅限 answer_with_citations 工具路径（tool 消息须对应 tool_call，协议要求）；
+                # 无工具直答校验失败不重试，直接转人工
+                if calls and calls[0].name == "answer_with_citations" and verify_attempts < 2:
+                    feedback = json.dumps(
+                        {
+                            "ok": False,
+                            "reason": verdict.reason,
+                            "hint": "答案未通过引用校验（" + verdict.reason + "）："
+                                    "每个实质内容句末尾必须标注 [片段编号]；"
+                                    "措辞须贴近片段原文，大幅改写会因词重叠不足被拦截；"
+                                    "不得补充片段之外的内容。请基于片段重新提交答案。",
+                        },
+                        ensure_ascii=False,
                     )
+                    messages = [*messages, final, tool_msg(calls[0].id, feedback)]
+                    continue
+                yield from self._system_handoff(
+                    session_id, prompts.FALLBACK_VERIFY_FAILED, f"答案校验未通过（{verdict.reason}）"
+                )
                 return
             if calls:  # create_ticket / handoff_to_human 等工具 → 执行后继续循环
                 call = calls[0]

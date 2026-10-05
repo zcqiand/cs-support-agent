@@ -5,6 +5,8 @@
 """
 from __future__ import annotations
 
+import pytest
+
 from cs_support_agent.kb import tokenize, vectorize, cosine, search
 
 # ---- 分词与向量化（M00.F02.I01）----

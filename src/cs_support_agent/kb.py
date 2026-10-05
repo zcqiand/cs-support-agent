@@ -54,8 +54,9 @@ def search(
     top_k: int = DEFAULT_TOP_K,
     min_score: float = DEFAULT_MIN_SCORE,
 ) -> list[dict]:
-    """检索 TopK 命中。文档向量 = title 词频 ×3 + text 词频；低于 min_score 全丢弃。
+    """检索 TopK 命中。文档向量 = title 词频 ×3 + content 词频；低于 min_score 全丢弃。
 
+    文章字段沿用 store 行形状 {"id","title","content",...}；
     命中项 {"id","title","snippet","score"}，按分数降序（同分按 id，确定性）。
     """
     qv = vectorize(query)
@@ -66,15 +67,16 @@ def search(
         dv: Counter = Counter()
         for k, cnt in vectorize(art["title"]).items():
             dv[k] += cnt * 3
-        for k, cnt in vectorize(art["text"]).items():
+        for k, cnt in vectorize(art["content"]).items():
             dv[k] += cnt
         score = cosine(qv, dv)
         if score >= min_score:
             hits.append(
                 {
                     "id": art["id"],
+                    "category": art.get("category", ""),
                     "title": art["title"],
-                    "snippet": art["text"],
+                    "snippet": art["content"],
                     "score": round(score, 4),
                 }
             )

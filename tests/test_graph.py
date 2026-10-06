@@ -48,11 +48,16 @@ class _Fake:
 
     def chat(self, *, messages, tools=None, temperature=0.8):
         self.calls.append({"messages": messages, "tools": tools})
-        return self.turns.pop(0)
+        msg = self.turns.pop(0)
+        if isinstance(msg, BaseException):
+            raise msg
+        return msg
 
     def chat_stream(self, *, messages, tools=None, temperature=0.8):
         self.calls.append({"messages": messages, "tools": tools})
         msg = self.turns.pop(0)
+        if isinstance(msg, BaseException):
+            raise msg
         if isinstance(msg, dict) and "reasoning" in msg:  # reasoning 事件 + final
             yield {"type": "reasoning", "text": msg["reasoning"]}
             msg = msg["message"]
@@ -217,6 +222,27 @@ def test_graph_unknown_clarify_then_second_handoff():
     e2 = _run(llm2, text="对，就是那个", store=store, session_id=sid)
     assert "handoff" in by_types(e2)
     assert e2[-1]["status"] == "ended"
+
+
+# ---- 审查 Important 2 锚：clarified 落库先于澄清轮成败（接受的 v1→v2 分歧） ----
+
+def test_graph_clarified_persists_before_clarification_round_succeeds():
+    """v2 在 unknown 分诊时即落库 clarified；v1 是澄清轮成功后才置位。
+    分歧面：澄清轮崩掉 → v2 下一条含糊消息直接转人工（安全兜底），v1 会再澄清一次。
+    裁定接受 v2 排序（转人工即安全路径），本测试钉住之。"""
+    store = make_store()
+    sid = store.create_session()["id"]
+    llm1 = _Fake([intents("unknown"), RuntimeError("澄清轮 LLM 崩了")])
+    try:
+        _run(llm1, text="嗯……就那个事儿", store=store, session_id=sid)
+    except RuntimeError:
+        pass  # 直连 invoke 异常上抛；接线层才会把它转成 error 事件
+    assert store.get_session(sid)["clarified"] == 1  # 崩了也已落库
+    llm2 = _Fake([intents("unknown")])
+    e2 = _run(llm2, text="对，就是那个", store=store, session_id=sid)
+    assert "handoff" in by_types(e2)  # 不再二次澄清，直接人工兜底
+    assert e2[-1]["status"] == "ended"
+    assert len(llm2.calls) == 1
 
 
 # ---- 护栏 ----

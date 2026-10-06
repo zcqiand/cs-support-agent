@@ -10,6 +10,7 @@ dependencies = [
     "uvicorn>=0.54,<0.55",
     "openai>=2.54,<2.55",
     "pydantic>=2.12,<2.13",
+    "langgraph>=0.4,<0.6",
 ]
 
 [project.optional-dependencies]
@@ -28,3 +29,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+filterwarnings = [
+    "ignore:The default value of `allowed_objects` will change:langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
+]

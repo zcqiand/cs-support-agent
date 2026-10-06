@@ -9,14 +9,14 @@
 
 - **TDD**：核心逻辑（检索器/意图路由/引用校验/Agent 循环）先写失败测试 → 实现 → 绿 → commit。
 - **mock-friendly**：`pip install -e ".[dev]" && pytest -q` 必须在无 Key、无网下全绿（FakeLLM 注入，禁止测试里真调 API）。
-- **版本钉死**：依赖与 `version-lock.json` 一致，不引 lock 外的库（不引 LangGraph/CrewAI/LangChain/向量库——检索手写，无外部embedding）。
+- **版本钉死**：依赖与 `version-lock.json` 一致，不引 lock 外的库（编排=LangGraph 单框架，书 ch12 对齐；禁 CrewAI/langchain 顶层/langchain-openai；检索手写，无外部 embedding/向量库）。
 - **禁止 env 默认值兜底**：`LLM_MODE` 必填（mock|live）；live 模式下 base_url/api_key/model 缺一即启动报错。
 - **密钥不入库**：key 只在 `.env`（已 gitignore），`.env.example` 放占位符。
 - **只增不改**：扩功能不动现有模块签名/行为。
 
 ## 技术栈（钉死于 version-lock.json）
 
-- 后端：Python 3.10+ / FastAPI / openai SDK（OpenAI 兼容直调：MiniMax-M3，base_url 可配）
+- 后端：Python 3.10+ / FastAPI / openai SDK（OpenAI 兼容直调：MiniMax-M3，base_url 可配）；编排：LangGraph StateGraph（graph.py 图内核，v2）
 - 前端：React 18 + TypeScript + Vite 5（npm 走 registry.npmmirror.com）
 - 存储：SQLite（`data/app.db`，thin DAO，不引 ORM）
 - 检索：**本地词频向量 + 余弦相似度**（纯 stdlib，CJK bigram + ASCII 词；知识库不出本机、检索不依赖网络）
@@ -43,7 +43,8 @@ src/cs_support_agent/
 ├── agent/
 │   ├── prompts.py   # 客服人设 + 意图/路由规则 + 引用纪律 + 检索片段组装
 │   ├── tools.py     # search_kb / answer_with_citations / create_ticket / handoff_to_human
-│   └── support.py   # 客服 Agent 循环（意图→路由→检索→作答→自检→SSE）
+│   ├── graph.py     # ★ 客服流程图：五路由+校验重答条件边+转人工入图（12 节点 StateGraph）
+│   └── support.py   # 客服 Agent 接线层（SSE 队列旁路，图跑 daemon 线程）
 └── api/             # 路由：kb / sessions / messages(SSE) / tickets
 frontend/            # React 18 + TS + Vite（工作台：对话+引用面板+KB+工单）
 ```

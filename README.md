@@ -16,15 +16,15 @@
   └─ unknown  → 澄清一次 → 再不明 → 转人工
 ```
 
-书中的 LangGraph + ChromaDB 叙事，本仓按纪律改为**手写 Agentic RAG 循环 +
-本地词频向量检索**（纯 stdlib，CJK bigram + 余弦，无网可跑，同等能力教学口径）。
+书中 ChromaDB 叙事改为**本地词频向量检索**（纯 stdlib，CJK bigram + 余弦，无网可跑，同等能力教学口径）；
+编排自 v2 起用 **LangGraph StateGraph**（书 ch12 框架对齐：五路由、校验重答条件边、转人工收口全部入图）。
 
 ## 快速开始
 
 ```bash
 # 后端（无 Key、无网全绿）
 pip install -e ".[dev]"
-pytest -q                                    # 96 项测试
+pytest -q                                    # 110 项测试
 
 # 离线演示（LLM_MODE=mock，分流标记词驱动，无需任何 Key）
 python -m cs_support_agent                   # 127.0.0.1:8803
@@ -69,7 +69,8 @@ src/cs_support_agent/
 ├── agent/
 │   ├── prompts.py   # 人设「杉杉」+ 引用纪律 + 片段注入 + 固定兜底文案
 │   ├── tools.py     # classify_intent / answer_with_citations / create_ticket / handoff_to_human
-│   └── support.py   # ★ Agentic RAG 循环（意图→路由→检索→作答→自检→SSE）
+│   ├── graph.py     # ★ 客服流程图：五路由+校验重答条件边+转人工入图（12 节点 StateGraph）
+│   └── support.py   # 客服 Agent 接线层（SSE 队列旁路，图跑 daemon 线程）
 └── api/routes.py    # REST + SSE（M05 前端唯一消费面）
 frontend/            # React 18 + TS：对话页（引用面板）/ 知识库页 / 工单页
 ```
@@ -85,7 +86,7 @@ frontend/            # React 18 + TS：对话页（引用面板）/ 知识库页
 ## 验收
 
 ```bash
-pytest -q                        # 96 passed，无 Key 无网
+pytest -q                        # 110 passed，无 Key 无网
 python -m cs_support_agent       # mock 离线可演示（8803）
 cd frontend && npm run build     # tsc + vite 构建通过
 ```

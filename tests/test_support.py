@@ -220,3 +220,17 @@ def test_search_crash_becomes_error_event_not_crash(monkeypatch):
     assert events[-1]["type"] == "error"
     assert "检索器炸了" in events[-1]["message"]
     assert store.get_session(sess["id"])["status"] == "live"  # 会话未崩
+
+
+def test_reply_wraps_pre_route_crash_as_error_event(monkeypatch):
+    """v1 的 try/except 只护 _route 之后的段落；v2 图内一切异常都转 error 事件（含 session 事件之前的落库段）。"""
+    agent, store = make_agent([intents("kb")])
+
+    def boom(*a, **k):
+        raise RuntimeError("append 炸了")
+
+    monkeypatch.setattr(store, "append_message", boom)
+    sess = store.create_session()
+    events = list(agent.reply(sess["id"], "怎么退货？"))
+    assert events[0]["type"] == "error"
+    assert "append 炸了" in events[0]["message"]

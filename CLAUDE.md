@@ -57,3 +57,10 @@ frontend/            # React 18 + TS + Vite（工作台：对话+引用面板+KB
 - **意图路由 = 前台分诊**：先听懂来意再分发；chitchat 简短寒暄不查库；ticket 开单留痕。
 - **知识库全虚构**：随仓种子 FAQ 的公司名/政策数字/电话一律虚构并在文件头注明示意。
 - MiniMax-M3 对接坑（`<think>` 内联思维链、工具轮回传 wire 形状）已在 llm.py 处理，见记忆 `minimax-m3-integration-pitfalls`。
+
+## 正式区 / 临时区（2026-10-24 人定，全产品线通用）
+
+- 过程件不与正式件混放：任务卡/批次卡、片段（frags-*）、批次文件、合并/对账/自检脚本、门控回执（receipts-*）、调试日志、QC 抽帧——项目级进 `_work/`，章级/集级进所属正式目录下 `_work/` 子目录
+- 正式区同名正式件有且仅有一个（不堆 v2/final 副本）
+- 章节正文、章级门控记录（chapter-NNN.*）、各类台账 json 是正式件，不进 `_work`
+- 可再生件不入库（见 .gitignore）：node_modules、build、out、bin/obj、`**/_work/render`、hook 审计日志

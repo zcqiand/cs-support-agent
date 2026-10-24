@@ -92,3 +92,17 @@ cd frontend && npm run build     # tsc + vite 构建通过
 ```
 
 功能全景见 [docs/functions/function-tree.md](docs/functions/function-tree.md)（6 模块全部已上线）。
+
+## 配套书籍及章节映射
+
+> 同一案例仓后续接入其他书籍时，在此节下新增书籍小节。
+
+### 书一《图解AI Agent：从零开始开发多场景应用》（卷四）
+
+- 书稿定位：xr-know-015，第 12 章正文代码块挂本仓 `source=` 锚点
+- 配套版本：`v2.0.0-20261006`（registry 冻结 tag，代码以此为准）
+
+| 章 | 章题 | 对应源文件 |
+| :--- | :--- | :--- |
+| 12 | 智能客服 | `frontend/src/api.ts` + `frontend/src/pages/Chat.tsx` + `frontend/src/pages/Knowledge.tsx` + `frontend/src/pages/Tickets.tsx` + `src/cs_support_agent/agent/graph.py` + `src/cs_support_agent/agent/prompts.py` + `src/cs_support_agent/agent/support.py` + `src/cs_support_agent/agent/tools.py` + `src/cs_support_agent/api/routes.py` + `src/cs_support_agent/config.py` + `src/cs_support_agent/kb.py` + `src/cs_support_agent/kb_seed.py` + `src/cs_support_agent/llm.py` + `src/cs_support_agent/main.py` + `src/cs_support_agent/mock_llm.py` + `src/cs_support_agent/store.py` + `src/cs_support_agent/verify.py` |
+
